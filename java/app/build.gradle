@@ -28,3 +28,9 @@ application {
     // Define the main class for the application.
     mainClass = 'terrydu.consistent.hashing.App'
 }
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
