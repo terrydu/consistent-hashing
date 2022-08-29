@@ -3,12 +3,164 @@
  */
 package terrydu.consistent.hashing;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
 public class App {
-    public String getGreeting() {
-        return "Hello World!";
+
+    static Loop loop = new Loop();
+
+    public void start() {
+        System.out.println("We'll start with 2 servers, each with equal weight (2 weight), and 3 people.");
+        System.out.println("");
+
+        createPeople();
+        printPeople();
+
+        createServers();
+        printServers();
+
+        visualize(loop.personLoop.keySet(), loop.serverLoop.keySet());
+    }
+
+    void createPeople() {
+        // Create the people, then add them to the loop.
+        ArrayList<HashElement> hashes = new ArrayList<>(
+            Arrays.asList(
+                new HashElement("1", "john"),
+                new HashElement("2", "bill"),
+                new HashElement("3", "jane")
+                // "alan"
+            )
+        );
+        for (HashElement elem : hashes) {
+            loop.addPerson(elem);
+        }
+    }
+
+    void printPeople() {
+        System.out.println("The existing inputs (people) are as follows:");
+
+        Set<Integer> personKeys = loop.personLoop.keySet();
+        for (Integer key : personKeys) {
+            HashElement hash = loop.personLoop.get(key);
+            System.out.println(hash.id + ": '" + hash.name + "', hash " + hash.hash + ", loc: " + hash.modOneHundred);
+        }
+    }
+
+    void createServers() {
+        // Create the servers, then add them to the loop.
+        ArrayList<Server> servers = new ArrayList<>(
+            Arrays.asList(
+                new Server("1", "Server1", 2),
+                new Server("2", "Server2", 2)
+            )
+        );
+        for (Server server : servers) {
+            loop.addServer(server);
+        }
+    }
+
+    void printServers() {
+        // Print existing server instances.
+        System.out.println("And the existing servers are arranged on our loop as follows:");
+        Set<Integer> serverKeys = loop.serverLoop.keySet();
+        for (Integer key : serverKeys) {
+            ServerInstance s = loop.serverLoop.get(key);
+            System.out.println(s.server.id + ": " + s.server.name + ", loc: " + s.loc);
+        }
+    }
+
+    /**
+     * Decide which format you'd like to visualize the 'ring' (the loop) as.
+     */
+    void visualize(Set<Integer> personKeys, Set<Integer> serverKeys) {
+        //display1(personKeys, serverKeys);
+        display2(personKeys, serverKeys);
+    }
+
+    /**
+     * This is a very abbreviated version, just showing numbers for people and servers.
+     */
+    void display1(Set<Integer> personKeys, Set<Integer> serverKeys) {
+        System.out.println("");
+        System.out.println("We'll map everything to our 'ring' (loop) that we'll visualize as being 100 in length.");
+        System.out.println("");
+
+        StringBuffer firstLine  = new StringBuffer("People:      ");
+        StringBuffer secondLine = new StringBuffer("Loop:    [0] ");
+        StringBuffer thirdLine  = new StringBuffer("Servers:     ");
+        
+        List<Integer> peopleList = new ArrayList<Integer>(personKeys);
+        Collections.sort(peopleList);
+
+        List<Integer> serverList = new ArrayList<Integer>(serverKeys);
+        Collections.sort(serverList);
+
+        for (int i=1; i<=100; i++) {
+            boolean appendedPerson = false;
+            for (Integer personKey : personKeys) {
+                if (personKey.intValue() == i) {
+                    firstLine.append(loop.personLoop.get(personKey).id);
+                    appendedPerson = true;
+                }
+            }
+            if (!appendedPerson) { firstLine.append(" "); }
+
+            secondLine.append("-");
+
+            boolean appendedServer = false;
+            for (Integer serverKey : serverKeys) {
+                if (serverKey.intValue() == i) {
+                    thirdLine.append(loop.serverLoop.get(serverKey).server.id);
+                    appendedServer = true;
+                    break;
+                }
+            }
+            if (!appendedServer) { thirdLine.append(" "); }
+        }
+        secondLine.append(" [100]");
+
+        System.out.println(firstLine);
+        System.out.println(secondLine);
+        System.out.println(thirdLine);
+    }
+
+    /**
+     * This is a more verbose way to visualize the loop, with a separate line for each person and server instance.
+     */
+    void display2(Set<Integer> personKeys, Set<Integer> serverKeys) {
+        System.out.println("");
+        System.out.println("We'll map everything to our 'ring' (loop) that we'll visualize as being 100 in length.");
+        System.out.println("");
+
+        System.out.println("People:      ");
+        for (Integer personKey : personKeys) {
+            StringBuffer personBuffer = new StringBuffer("             ");
+            int len = personKey.intValue() - 1;
+            for (int i=0; i<len; i++) {
+                personBuffer.append(" ");
+            }
+            personBuffer.append("[" + personKey.intValue() + "] " + loop.personLoop.get(personKey).name);
+            System.out.println(personBuffer);
+        }
+        System.out.println("Loop:    [0] ---------------------------------------------------------------------------------------------------- [100]");
+        System.out.println("Servers:     ");
+        for (Integer serverKey : serverKeys) {
+            StringBuffer serverBuffer = new StringBuffer("             ");
+            int len = serverKey.intValue() - 1;
+            for (int i=0; i<len; i++) {
+                serverBuffer.append(" ");
+            }
+            serverBuffer.append("[" + serverKey.intValue() + "] " + loop.serverLoop.get(serverKey).server.name);
+            System.out.println(serverBuffer);
+        }
     }
 
     public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
+        new App().start();
     }
 }
