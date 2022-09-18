@@ -15,9 +15,12 @@ public class Loop {
 
     HashMap<Integer, HashElement> personLoop = new HashMap<>();
     HashMap<Integer, ServerInstance> serverLoop = new HashMap<>();       // Note that the same server will be added multiple times, once for each weight.
+    int personMaxId = 0;
+    int serverMaxId = 0;
 
     public void addPerson(HashElement hash) {
         personLoop.put(hash.modOneHundred, hash);
+        personMaxId++;
     }
 
     public void addServer(Server server) {
@@ -26,6 +29,30 @@ public class Loop {
             int index = identifyInsertionPoint();
             addServerInstanceToLoop(index, server);
         }
+        serverMaxId++;
+    }
+
+    /**
+     * A server has an Id, which is the same across all of its instances.
+     * We are going to remove all ServerInstances that have a matching ServerId.
+     * @param serverIdText The ID of the server, as text, that we wish to remove.
+     */
+    public void removeServer(String serverId) {
+        ArrayList<Integer> serverInstancesToRemove = new ArrayList<>();
+
+        Set<Integer> serverInstanceLocs = serverLoop.keySet();
+        for (int serverInstanceLoc : serverInstanceLocs) {
+            var srv = serverLoop.get(serverInstanceLoc).server;
+            if (serverId.equals(srv.id)) {
+                serverInstancesToRemove.add(serverInstanceLoc);
+            }
+        }
+
+        for (int serverInstanceKey : serverInstancesToRemove) {
+            serverLoop.remove(serverInstanceKey);
+        }
+
+        System.out.println("We've removed serverId " + serverId);
     }
 
     /**

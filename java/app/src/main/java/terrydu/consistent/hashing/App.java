@@ -3,6 +3,8 @@
  */
 package terrydu.consistent.hashing;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,9 +14,31 @@ import java.util.Set;
 public class App {
 
     static Loop loop = new Loop();
+    static ArrayList<String> personNames = new ArrayList<>(
+        Arrays.asList(
+            "john",
+            "bill",
+            "jane",
+            "alan",
+            "mila",
+            "ella",
+            "liam",
+            "aria",
+            "zoey",
+            "noah",
+            "leah",
+            "ruby",
+            "luke",
+            "ezra",
+            "lily",
+            "jose",
+            "adam"
+        ));
+    static InputStreamReader inputStream = null;
+    static BufferedReader br = null;
 
     public void start() {
-        System.out.println("We'll start with 2 servers, each with equal weight (2 weight), and 3 people.");
+        System.out.println("We'll start with 3 servers, each with equal weight (2 weight), and 3 people on a 'ring' (loop) that is conceptually 100 in length.");
         System.out.println("");
 
         createPeople();
@@ -23,17 +47,29 @@ public class App {
         createServers();
         printServers();
 
+        //associatePeopleToServers();
+
         visualize(loop.personLoop.keySet(), loop.serverLoop.keySet());
+
+        while (true) {
+            // Start our interactive loop.
+            boolean isQuit = prompt();
+            if (isQuit) { return; }
+
+            //associatePeopleToServers();
+            visualize(loop.personLoop.keySet(), loop.serverLoop.keySet());
+        }
     }
 
+    /**
+     * Create the people, then add them to the loop.
+     */
     void createPeople() {
-        // Create the people, then add them to the loop.
         ArrayList<HashElement> hashes = new ArrayList<>(
             Arrays.asList(
-                new HashElement("1", "john"),
-                new HashElement("2", "bill"),
-                new HashElement("3", "jane")
-                // "alan"
+                new HashElement("1", personNames.get(0)),
+                new HashElement("2", personNames.get(1)),
+                new HashElement("3", personNames.get(2))
             )
         );
         for (HashElement elem : hashes) {
@@ -41,22 +77,28 @@ public class App {
         }
     }
 
+    /**
+     * Print the people.
+     */
     void printPeople() {
         System.out.println("The existing inputs (people) are as follows:");
 
         Set<Integer> personKeys = loop.personLoop.keySet();
         for (Integer key : personKeys) {
             HashElement hash = loop.personLoop.get(key);
-            System.out.println(hash.id + ": '" + hash.name + "', hash " + hash.hash + ", loc: " + hash.modOneHundred);
+            System.out.println("  ID " + hash.id + ": '" + hash.name + "', hash " + hash.hash + ", loc: " + hash.modOneHundred);
         }
     }
 
+    /**
+     * Create the servers, then add them to the loop.
+     */
     void createServers() {
-        // Create the servers, then add them to the loop.
         ArrayList<Server> servers = new ArrayList<>(
             Arrays.asList(
                 new Server("1", "Server1", 2),
-                new Server("2", "Server2", 2)
+                new Server("2", "Server2", 2),
+                new Server("3", "Server3", 2)
             )
         );
         for (Server server : servers) {
@@ -64,14 +106,91 @@ public class App {
         }
     }
 
+    /**
+     * Print existing server instances.
+     */
     void printServers() {
-        // Print existing server instances.
         System.out.println("And the existing servers are arranged on our loop as follows:");
         Set<Integer> serverKeys = loop.serverLoop.keySet();
         for (Integer key : serverKeys) {
             ServerInstance s = loop.serverLoop.get(key);
-            System.out.println(s.server.id + ": " + s.server.name + ", loc: " + s.loc);
+            System.out.println("  ID " + s.server.id + ": " + s.server.name + ", loc: " + s.loc);
         }
+    }
+
+    ServerInstance resolvePersonToServer(HashElement person) {
+        Set<Integer> serverInstanceKeys = loop.serverLoop.keySet();
+        List<Integer> serverInstanceList = new ArrayList<Integer>(serverInstanceKeys);
+        Collections.sort(serverInstanceList);
+
+        for (Integer serverInstanceKey : serverInstanceList) {
+            if (serverInstanceKey < person.modOneHundred) {
+                continue;
+            } else {
+                return loop.serverLoop.get(serverInstanceKey);
+            }
+        }
+        // If we get this far, then it means we searched the whole thing and
+        // couldn't find a server with a bigger location. Hence we need to wrap to the start.
+        return loop.serverLoop.get(serverInstanceList.get(0));
+    }
+
+    boolean prompt() {
+        System.out.println("");
+        System.out.println("Choose what to do next:");
+        System.out.println("  1 - Add a server");
+        System.out.println("  2 - Add a person");
+        System.out.println("  3 - Remove a server");
+        System.out.println("  0 - Quit");
+
+        String input = readLine();
+        switch (input) {
+            case "1": {
+                System.out.println("What weight should it have? (2 is default)");
+                String weightText = readLine();
+
+                int nextId = loop.serverMaxId + 1;
+                String serverId = Integer.toString(nextId);
+                var srv = new Server(serverId, "Server" + serverId, Integer.parseInt(weightText));
+                loop.addServer(srv);
+                break;
+            }
+            case "2": {
+                var personIdText = Integer.toString(loop.personMaxId + 1);
+                var hash = new HashElement(personIdText, personNames.get(loop.personMaxId));
+                loop.addPerson(hash);
+                break;
+            }
+            case "3": {
+                System.out.println("Which server Id should be removed?");
+                String serverIdText = readLine();
+                loop.removeServer(serverIdText);
+                break;
+            }
+            default: {
+                System.out.println("Goodbye");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    String readLine() {
+        String newLine = null;
+        if (inputStream == null) {
+            inputStream = new InputStreamReader(System.in);
+        }
+        if (br == null) {
+            br = new BufferedReader(inputStream);
+        }
+        try {
+            newLine = br.readLine();
+        } catch(Exception e) {
+            String errorMsg = "ERROR - Unable to read input from STDIN! Details: " + e.getMessage();
+            System.err.println(errorMsg);
+            throw new RuntimeException(errorMsg);
+        }
+        return newLine;
     }
 
     /**
@@ -137,8 +256,14 @@ public class App {
         System.out.println("We'll map everything to our 'ring' (loop) that we'll visualize as being 100 in length.");
         System.out.println("");
 
+        List<Integer> peopleList = new ArrayList<Integer>(personKeys);
+        //Collections.sort(peopleList);
+
+        List<Integer> serverList = new ArrayList<Integer>(serverKeys);
+        //Collections.sort(serverList);
+
         System.out.println("People:      ");
-        for (Integer personKey : personKeys) {
+        for (Integer personKey : peopleList) {
             StringBuffer personBuffer = new StringBuffer("             ");
             int len = personKey.intValue() - 1;
             for (int i=0; i<len; i++) {
@@ -149,7 +274,7 @@ public class App {
         }
         System.out.println("Loop:    [0] ---------------------------------------------------------------------------------------------------- [100]");
         System.out.println("Servers:     ");
-        for (Integer serverKey : serverKeys) {
+        for (Integer serverKey : serverList) {
             StringBuffer serverBuffer = new StringBuffer("             ");
             int len = serverKey.intValue() - 1;
             for (int i=0; i<len; i++) {
@@ -157,6 +282,15 @@ public class App {
             }
             serverBuffer.append("[" + serverKey.intValue() + "] " + loop.serverLoop.get(serverKey).server.name);
             System.out.println(serverBuffer);
+        }
+
+        System.out.println("");
+        System.out.println("Load balancing resolutions:");
+        Collections.sort(peopleList);
+        for (int personKey : peopleList) {
+            HashElement hash = loop.personLoop.get(personKey);
+            ServerInstance srv = resolvePersonToServer(hash);
+            System.out.println("  Person '" + hash.name + "' at [" + hash.modOneHundred +"] is resolved to '" + srv.server.name + "' [" + srv.loc + "]");
         }
     }
 
