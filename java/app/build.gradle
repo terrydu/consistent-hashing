@@ -29,6 +29,16 @@ application {
     mainClass = 'terrydu.consistent.hashing.App'
 }
 
+jar {
+    manifest {
+        attributes "Main-Class": "terrydu.consistent.hashing.App"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 test {
     testLogging {
         events "passed", "skipped", "failed"

@@ -3,7 +3,7 @@ To compile the program
 ```PS C:\DevTrees\consistent-hashing\java> .\gradlew.bat clean build```
 
 
-To just run the program:
+To run the program:
 
-```PS C:\DevTrees\consistent-hashing\java> .\gradlew.bat run```
+```PS C:\DevTrees\consistent-hashing\java> java -jar .\app\build\libs\app.jar```
 
