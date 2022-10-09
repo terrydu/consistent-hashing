@@ -65,16 +65,14 @@ public class App {
      * Create the people, then add them to the loop.
      */
     void createPeople() {
-        ArrayList<HashElement> hashes = new ArrayList<>(
-            Arrays.asList(
-                new HashElement("1", personNames.get(0)),
-                new HashElement("2", personNames.get(1)),
-                new HashElement("3", personNames.get(2))
-            )
+        Arrays.asList(
+            new HashElement("1", personNames.get(0)),
+            new HashElement("2", personNames.get(1)),
+            new HashElement("3", personNames.get(2))
+        )
+        .stream().forEach(elem -> 
+            loop.addPerson(elem)
         );
-        for (HashElement elem : hashes) {
-            loop.addPerson(elem);
-        }
     }
 
     /**
@@ -84,26 +82,24 @@ public class App {
         System.out.println("The existing inputs (people) are as follows:");
 
         Set<Integer> personKeys = loop.personLoop.keySet();
-        for (Integer key : personKeys) {
+        personKeys.stream().forEach(key -> {
             HashElement hash = loop.personLoop.get(key);
             System.out.println("  ID " + hash.id + ": '" + hash.name + "', hash " + hash.hash + ", loc: " + hash.modOneHundred);
-        }
+        });
     }
 
     /**
      * Create the servers, then add them to the loop.
      */
     void createServers() {
-        ArrayList<Server> servers = new ArrayList<>(
-            Arrays.asList(
-                new Server("1", "Server1", 2),
-                new Server("2", "Server2", 2),
-                new Server("3", "Server3", 2)
-            )
+        Arrays.asList(
+            new Server("1", "Server1", 2),
+            new Server("2", "Server2", 2),
+            new Server("3", "Server3", 2)
+        )
+        .stream().forEach(server -> 
+            loop.addServer(server)
         );
-        for (Server server : servers) {
-            loop.addServer(server);
-        }
     }
 
     /**
@@ -112,12 +108,19 @@ public class App {
     void printServers() {
         System.out.println("And the existing servers are arranged on our loop as follows:");
         Set<Integer> serverKeys = loop.serverLoop.keySet();
-        for (Integer key : serverKeys) {
-            ServerInstance s = loop.serverLoop.get(key);
+        serverKeys.stream().forEach(key -> {
+            var s = loop.serverLoop.get(key);
             System.out.println("  ID " + s.server.id + ": " + s.server.name + ", loc: " + s.loc);
-        }
+        });
     }
 
+    /**
+     * Find the server that should be associated with this incoming request (this person).  We 
+     * search for servers that are "ahead" of us on the loop.
+     * @param person The incoming request.
+     * @return The ServerInstance (not the Server) that was ahead of the person on the loop. 
+     * Typically we'll use that to get the actual Server.
+     */
     ServerInstance resolvePersonToServer(HashElement person) {
         Set<Integer> serverInstanceKeys = loop.serverLoop.keySet();
         List<Integer> serverInstanceList = new ArrayList<Integer>(serverInstanceKeys);
@@ -130,6 +133,7 @@ public class App {
                 return loop.serverLoop.get(serverInstanceKey);
             }
         }
+
         // If we get this far, then it means we searched the whole thing and
         // couldn't find a server with a bigger location. Hence we need to wrap to the start.
         return loop.serverLoop.get(serverInstanceList.get(0));
